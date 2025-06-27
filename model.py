@@ -5,7 +5,7 @@ from typing import Optional, List, Set
 from datetime import date
 
 
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class OrderLine:
     orderid: str
     sku: str
@@ -17,8 +17,11 @@ class Batch:
         self.reference = ref
         self.sku = sku
         self.eta = eta
-        self.purchased_quantity = qty
+        self._purchased_quantity = qty
         self._allocations: Set[OrderLine] = set()
+
+    def __repr__(self) -> str:
+        return f"<Batch {self.reference}>"
 
     def __gt__(self, other: Batch) -> bool:
         if self.eta is None:
@@ -26,6 +29,14 @@ class Batch:
         if other.eta is None:
             return True
         return self.eta > other.eta
+    
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Batch):
+            return False
+        return self.reference == other.reference
+    
+    def __hash__(self) -> int:
+        return hash(self.reference)
 
     def allocate(self, line: OrderLine) -> None:
         if self.can_allocate(line):
@@ -41,7 +52,7 @@ class Batch:
     
     @property
     def available_quantity(self) -> int:
-        return self.purchased_quantity - self.allocated_quantity
+        return self._purchased_quantity - self.allocated_quantity
 
     def can_allocate(self, line: OrderLine) -> bool:
         return (

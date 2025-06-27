@@ -7,6 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+flask = "^3.1.1"
+sqlalchemy = "^2.0.41"
 
 
 [tool.poetry.group.dev.dependencies]
