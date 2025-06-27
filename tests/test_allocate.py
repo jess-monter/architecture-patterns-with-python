@@ -1,5 +1,5 @@
 from datetime import date
-from model import Batch, OrderLine, allocate, OutOfStock
+from allocation.domain.model import Batch, OrderLine, allocate, OutOfStock
 
 import pytest
 

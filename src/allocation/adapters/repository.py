@@ -1,8 +1,9 @@
 from typing import List
 from abc import ABC, abstractmethod
 
-import model
+import allocation.domain.model as model
 from sqlalchemy.orm import Session
+
 
 class AbstractRepository(ABC):
     @abstractmethod
@@ -13,6 +14,11 @@ class AbstractRepository(ABC):
     @abstractmethod
     def add(self, batch: model.Batch) -> None:
         """Add a new entity to the repository."""
+        raise NotImplementedError("This method should be overridden in a subclass.")
+    
+    @abstractmethod
+    def list(self) -> List[model.Batch]:
+        """List all entities in the repository."""
         raise NotImplementedError("This method should be overridden in a subclass.")
 
 

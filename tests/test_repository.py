@@ -1,5 +1,5 @@
-import model
-import repository
+import allocation.domain.model as model
+import allocation.adapters.repository as repository
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session

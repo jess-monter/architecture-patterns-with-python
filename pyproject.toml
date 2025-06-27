@@ -9,12 +9,16 @@ readme = "README.md"
 python = "^3.10"
 flask = "^3.1.1"
 sqlalchemy = "^2.0.41"
+psycopg2 = "^2.9.10"
+requests = "^2.32.4"
+setuptools = "^80.9.0"
 
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.11.2"
 ruff = "^0.6.4"
 pytest = "^8.3.2"
+types-requests = "^2.32.4.20250611"
 
 [tool.ruff]
 # Select the rules you want to apply (e.g., E for errors, F for pyflakes, etc.)
@@ -31,6 +35,17 @@ exclude = ["migrations/*", "settings.py"]
 
 # Enable autofix functionality (optional)
 fix = true
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+warn_return_any = true
+
+exclude = "^tests/"
 
 [build-system]
 requires = ["poetry-core"]
