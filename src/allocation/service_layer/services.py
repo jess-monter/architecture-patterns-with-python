@@ -16,16 +16,20 @@ def is_valid_sku(sku: str, batches: list[model.Batch]) -> bool:
 
 def add_batch(ref: str, sku: str, qty: int, eta: Optional[date], uow: unit_of_work.AbstractUnitOfWork) -> None:
     with uow:
-        uow.batches.add(model.Batch(ref=ref, sku=sku, qty=qty, eta=eta))
+        product = uow.products.get(sku=sku)
+        if product is None:
+            product = model.Product(sku=sku, batches=[])
+            uow.products.add(product)
+        product.batches.append(model.Batch(ref=ref, sku=sku, qty=qty, eta=eta))
         uow.commit()
 
 
 def allocate(orderid: str, sku: str, qty: int, uow: unit_of_work.AbstractUnitOfWork) -> Optional[str]:
     line = model.OrderLine(orderid=orderid, sku=sku, qty=qty)
     with uow:
-        batches = uow.batches.list()
-        if not is_valid_sku(line.sku, batches):
+        product = uow.products.get(sku=line.sku)
+        if product is None:
             raise InvalidSku(f"Invalid sku {line.sku}")
-        batch_ref: Optional[str] = model.allocate(line, batches)
+        batch_ref: Optional[str] = product.allocate(line)
         uow.commit()
     return batch_ref

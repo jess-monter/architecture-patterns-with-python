@@ -73,3 +73,18 @@ def allocate(line: OrderLine, batches: List[Batch]) -> Optional[str]:
     batch.allocate(line)
     return batch.reference if batch else None
 
+
+class Product:
+    def __init__(self, sku: str, batches: List[Batch], version_number: int = 0) -> None:
+        self.sku = sku
+        self.batches = batches
+        self.version_number = version_number
+
+    def allocate(self, line: OrderLine) -> Optional[str]:
+        try:
+            batch = next(b for b in sorted(self.batches) if b.can_allocate(line))
+            batch.allocate(line)
+            self.version_number += 1
+            return batch.reference
+        except StopIteration:
+            raise OutOfStock(f"Out of stock for sku {line.sku}")

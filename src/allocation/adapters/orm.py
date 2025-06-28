@@ -17,12 +17,19 @@ order_lines = Table(
     Column("orderid", String(255)),
 )
 
+product = Table(
+    "products",
+    metadata,
+    Column("sku", String(255), primary_key=True),
+    Column("version_number", Integer, nullable=False, default=0),
+)
+
 batches = Table(
     "batches",
     metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("reference", String(255)),
-    Column("sku", String(255)),
+    Column("sku", ForeignKey("products.sku")),
     Column("_purchased_quantity", Integer, nullable=False),
     Column("eta", Date, nullable=True),
 )
@@ -45,6 +52,14 @@ def start_mappers() -> None:
         properties={
             "_allocations": relationship(
                 model.OrderLine, secondary=allocations, collection_class=set,
-            )
+            ),
+            "product": relationship(model.Product, back_populates="batches")
+        },
+    )
+    mapper_registry.map_imperatively(
+        model.Product,
+        product,
+        properties={
+            "batches": relationship(model.Batch, back_populates="product"),
         },
     )

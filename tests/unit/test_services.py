@@ -12,22 +12,22 @@ tomorrow = date.today().replace(day=today.day + 1)  # Example future date
 
 
 class FakeRepository(AbstractRepository):
-    def __init__(self, batches: List[model.Batch]) -> None:
-        self._batches = set(batches)
+    def __init__(self, products: List[model.Product]) -> None:
+        self._products = set(products)
 
-    def add(self, batch: model.Batch) -> None:
-        self._batches.add(batch)
+    def add(self, product: model.Product) -> None:
+        self._products.add(product)
 
-    def get(self, reference: str) -> model.Batch:
-        return next((b for b in self._batches if b.reference == reference), None)
+    def get(self, sku: str) -> model.Batch:
+        return next((p for p in self._products if p.sku == sku), None)
     
-    def list(self) -> list[model.Batch]:
-        return list(self._batches)
-    
+    def list(self) -> list[model.Product]:
+        return list(self._products)
+
 
 class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
     def __init__(self) -> None:
-        self.batches = FakeRepository([])
+        self.products = FakeRepository([])
         self.committed = False
 
     def commit(self) -> None:
@@ -38,10 +38,10 @@ class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
         pass
 
 
-def test_add_batch() -> None:
+def test_add_batch_for_new_product() -> None:
     uow = FakeUnitOfWork()
     services.add_batch(ref="b1", sku="sku1", qty=100, eta=None, uow=uow)
-    assert uow.batches.get("b1") is not None
+    assert uow.products.get("sku1") is not None
     assert uow.committed
 
 
