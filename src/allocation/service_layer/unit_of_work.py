@@ -1,0 +1,57 @@
+from __future__ import annotations
+
+from typing import Any
+from abc import ABC, abstractmethod
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+
+from allocation import config
+from allocation.adapters import repository
+
+
+class AbstractUnitOfWork(ABC):
+    batches: repository.AbstractRepository
+
+    def __enter__(self) -> AbstractUnitOfWork:
+        return self
+    
+    def __exit__(self, *args: Any) -> None:
+        self.rollback()
+
+    @abstractmethod
+    def commit(self) -> None:
+        """Commit the current transaction."""
+        raise NotImplementedError
+    
+    @abstractmethod
+    def rollback(self) -> None:
+        """Rollback the current transaction."""
+        raise NotImplementedError
+    
+
+DEFAULT_SESSION_FACTORY = sessionmaker(
+    bind=create_engine(config.get_postgres_uri()),
+)
+
+class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
+    def __init__(self, session_factory: sessionmaker = DEFAULT_SESSION_FACTORY) -> None:
+        self.session_factory = session_factory
+
+    def __enter__(self) -> AbstractUnitOfWork:
+        self.session = self.session_factory() # type: Session
+        self.batches = repository.SqlAlchemyRepository(self.session)
+        return super().__enter__()
+    
+    def __exit__(self, *args: Any) -> None:
+        super().__exit__(*args)
+        self.session.close()
+
+    def commit(self) -> None:
+        """Commit the current transaction."""
+        self.session.commit()
+
+    def rollback(self) -> None:
+        """Rollback the current transaction."""
+        self.session.rollback()
+
