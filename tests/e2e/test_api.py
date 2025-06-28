@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Optional
 
 import uuid
 import pytest
@@ -25,19 +25,28 @@ def random_orderid(name: str = "") -> str:
     return f"order-{name}-{random_suffix()}"
 
 
+def post_to_add_batch(ref: str, sku: str, qty: int, eta: Optional[str]) -> None:
+    """Helper function to post to the /add_batch endpoint."""
+    url = config.get_api_url()
+    r = requests.post(
+        f"{url}/add_batch",
+        json={"ref": ref, "sku": sku, "qty": qty, "eta": eta},
+    )
+    assert r.status_code == 201
+
+
+@pytest.mark.usefixtures("postgres_db")
 @pytest.mark.usefixtures("restart_api")
-def test_happy_path_returns_201_and_allocated_batch(add_stock):
+def test_happy_path_returns_201_and_allocated_batch() -> None:
     sku, othersku = random_sku(), random_sku("other")
     earlybatch = random_batch_ref("1")
     laterbatch = random_batch_ref("2")
     otherbatch = random_batch_ref("3")
-    add_stock(
-        [
-            (laterbatch, sku, 100, "2011-01-02"),
-            (earlybatch, sku, 100, "2011-01-01"),
-            (otherbatch, othersku, 100, None),
-        ]
-    )
+
+    post_to_add_batch(laterbatch, sku, 100, "2011-01-02")
+    post_to_add_batch(earlybatch, sku, 100, "2011-01-01")
+    post_to_add_batch(otherbatch, othersku, 100, None)
+
     data = {"orderid": random_orderid(), "sku": sku, "qty": 3}
     url = config.get_api_url()
 
@@ -46,9 +55,9 @@ def test_happy_path_returns_201_and_allocated_batch(add_stock):
     assert r.status_code == 201
     assert r.json()["batchref"] == earlybatch
 
-
+@pytest.mark.usefixtures("postgres_db")
 @pytest.mark.usefixtures("restart_api")
-def test_unhappy_path_returns_400_and_error_message():
+def test_unhappy_path_returns_400_and_error_message() -> None:
     unknown_sku, orderid = random_sku(), random_orderid()
     data = {"orderid": orderid, "sku": unknown_sku, "qty": 20}
     url = config.get_api_url()
