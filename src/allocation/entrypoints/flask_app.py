@@ -1,14 +1,12 @@
 from typing import List, Tuple
-from flask import Flask, jsonify, request, Response
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from flask import Flask, request, Response
 
 from datetime import datetime
 
-from allocation import config
-from allocation.domain import model
-from allocation.adapters import orm, repository
-from allocation.service_layer import services, unit_of_work
+from allocation.domain import model, events
+from allocation.service_layer.handlers import InvalidSku
+from allocation.adapters import orm
+from allocation.service_layer import messagebus, unit_of_work
 
 
 app = Flask(__name__)
@@ -24,26 +22,22 @@ def add_batch() -> Tuple[Response, int]:
     eta = request.json["eta"]
     if eta is not None:
         eta = datetime.fromisoformat(eta).date()
-    services.add_batch(
-        request.json["ref"],
-        request.json["sku"],
-        request.json["qty"],
-        eta,
-        unit_of_work.SqlAlchemyUnitOfWork(),
+    event = events.BatchCreated(
+        request.json["ref"], request.json["sku"], request.json["qty"], eta
     )
+    messagebus.handle(event, unit_of_work.SqlAlchemyUnitOfWork())
     return "OK", 201
 
 
 @app.route("/allocate", methods=["POST"])
 def allocate_endpoint() -> Tuple[Response, int]:
     try:
-        batch_ref = services.allocate(
-            request.json["orderid"],
-            request.json["sku"],
-            request.json["qty"],
-            unit_of_work.SqlAlchemyUnitOfWork(),
+        event = events.AllocationRequired(
+            request.json["orderid"], request.json["sku"], request.json["qty"]
         )
-    except (model.OutOfStock, services.InvalidSku) as e:
-        return jsonify({"message": str(e)}), 400
-    return jsonify({"batchref": batch_ref}), 201
+        results = messagebus.handle(event, unit_of_work.SqlAlchemyUnitOfWork())
+        batchref = results.pop(0)
+    except InvalidSku as e:
+        return {"message": str(e)}, 400
 
+    return {"batchref": batchref}, 201

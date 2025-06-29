@@ -1,12 +1,20 @@
-from typing import Callable, Dict, List, Type
+from typing import Callable, Dict, List, Optional, Type
 
 from allocation.domain import events
 from allocation.adapters import email
+from allocation.service_layer import unit_of_work
+from allocation.service_layer import handlers
 
 
-def handle(event: events.Event) -> None:
-    for handler in HANDLERS[type(event)]:
-        handler(event)
+def handle(event: events.Event, uow: unit_of_work.AbstractUnitOfWork) -> List[Optional[str]]:
+    results = []
+    queue = [event]
+    while queue:
+        event = queue.pop(0)
+        for handler in HANDLERS[type(event)]:
+            results.append(handler(event, uow=uow))
+            queue.extend(uow.collect_new_events())
+    return results
 
 
 def send_out_of_stock_notification(event: events.OutOfStock) -> None:
@@ -17,6 +25,9 @@ def send_out_of_stock_notification(event: events.OutOfStock) -> None:
 
 
 HANDLERS: Dict[Type[events.Event], List[Callable]] = {
-    events.OutOfStock: [send_out_of_stock_notification],
+    events.BatchCreated: [handlers.add_batch],
+    events.BatchQuantityChanged: [handlers.change_batch_quantity],
+    events.AllocationRequired: [handlers.allocate],
+    events.OutOfStock: [handlers.send_out_of_stock_notification],
 
 }
