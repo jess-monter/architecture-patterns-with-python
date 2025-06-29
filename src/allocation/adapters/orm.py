@@ -1,4 +1,6 @@
-from sqlalchemy import Table, MetaData, Column, Integer, String, Date, ForeignKey
+from typing import Any
+
+from sqlalchemy import Table, MetaData, Column, Integer, String, Date, ForeignKey, event
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import registry
 
@@ -63,3 +65,8 @@ def start_mappers() -> None:
             "batches": relationship(model.Batch, back_populates="product"),
         },
     )
+
+
+@event.listens_for(model.Product, "load")
+def receive_load(product: model.Product, _: Any) -> None:
+    product.events = []

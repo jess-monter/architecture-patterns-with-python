@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker, Session
 
 from allocation import config
 from allocation.adapters import repository
-
+from allocation.service_layer import messagebus
 
 class AbstractUnitOfWork(ABC):
     products: repository.AbstractRepository
@@ -19,8 +19,18 @@ class AbstractUnitOfWork(ABC):
     def __exit__(self, *args: Any) -> None:
         self.rollback()
 
-    @abstractmethod
     def commit(self) -> None:
+        self._commit()
+        self.publish_events()
+
+    def publish_events(self) -> None:
+        for product in self.products.seen:
+            while product.events:
+                event = product.events.pop(0)
+                messagebus.handle(event)
+
+    @abstractmethod
+    def _commit(self) -> None:
         """Commit the current transaction."""
         raise NotImplementedError
     
@@ -50,7 +60,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         super().__exit__(*args)
         self.session.close()
 
-    def commit(self) -> None:
+    def _commit(self) -> None:
         """Commit the current transaction."""
         self.session.commit()
 
