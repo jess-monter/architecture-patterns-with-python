@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Union
 from datetime import date
 
-from allocation.domain import events
+from allocation.domain import events, commands
 
 
 @dataclass(unsafe_hash=True)
@@ -84,7 +84,7 @@ class Product:
         self.sku = sku
         self.batches = batches
         self.version_number = version_number
-        self.events: List[events.Event] = []
+        self.events: List[Union[events.Event, commands.Command]] = []
 
     def allocate(self, line: OrderLine) -> Optional[str]:
         try:
@@ -103,5 +103,5 @@ class Product:
         while batch.available_quantity < 0:
             line = batch.deallocate_one()
             self.events.append(
-                events.AllocationRequired(line.orderid, line.sku, line.qty)
+                commands.Allocate(line.orderid, line.sku, line.qty)
             )
