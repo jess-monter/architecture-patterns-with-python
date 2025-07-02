@@ -1,3 +1,5 @@
+from typing import Dict
+
 import os
 
 
@@ -10,6 +12,12 @@ def get_postgres_uri() -> str:
 
 
 def get_api_url() -> str:
-    host = os.environ.get("API_HOST", "localhost")
-    port = 5000
+    host = os.environ.get("API_HOST", "127.0.0.1")
+    port = os.environ.get("API_PORT", 5000)
     return f"http://{host}:{port}"
+
+
+def get_redis_host_and_port() -> Dict[str, str]:
+    host = os.environ.get("REDIS_HOST", "localhost")
+    port = 6379
+    return {"host": host, "port": str(port)}

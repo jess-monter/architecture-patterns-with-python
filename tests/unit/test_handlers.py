@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 
 from allocation.adapters import repository
-from allocation.domain import events, model, commands
+from allocation.domain import model, commands
 from allocation.service_layer import handlers, messagebus, unit_of_work
 
 
@@ -117,7 +117,9 @@ class TestChangeBatchQuantity:
         ]
         for msg in history:
             messagebus.handle(msg, uow)
+
         [batch1, batch2] = uow.products.get(sku="INDIFFERENT-TABLE").batches
+
         assert batch1.available_quantity == 10
         assert batch2.available_quantity == 50
 
