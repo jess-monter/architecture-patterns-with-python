@@ -60,8 +60,9 @@ def send_out_of_stock_notification(event: events.OutOfStock) -> None:
 
 
 EVENT_HANDLERS: Dict[Type[events.Event], List[Callable]] = {
-    events.Allocated: [handlers.publish_allocated_event],
+    events.Allocated: [handlers.publish_allocated_event, handlers.add_allocation_to_read_model],
     events.OutOfStock: [handlers.send_out_of_stock_notification],
+    events.Deallocated: [handlers.remove_allocation_from_read_model, handlers.reallocate],
 
 }
 

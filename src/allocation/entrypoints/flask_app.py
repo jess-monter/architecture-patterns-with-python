@@ -1,12 +1,14 @@
 from typing import List, Tuple
-from flask import Flask, request, Response
+from flask import Flask, request, Response, jsonify
 
 from datetime import datetime
+
 
 from allocation.domain import model, commands
 from allocation.service_layer.handlers import InvalidSku
 from allocation.adapters import orm
 from allocation.service_layer import messagebus, unit_of_work
+from allocation import views
 
 
 app = Flask(__name__)
@@ -35,9 +37,16 @@ def allocate_endpoint() -> Tuple[Response, int]:
         cmd = commands.Allocate(
             request.json["orderid"], request.json["sku"], request.json["qty"]
         )
-        results = messagebus.handle(cmd, unit_of_work.SqlAlchemyUnitOfWork())
-        batchref = results.pop(0)
+        messagebus.handle(cmd, unit_of_work.SqlAlchemyUnitOfWork())
     except InvalidSku as e:
         return {"message": str(e)}, 400
+    return "OK", 202
 
-    return {"batchref": batchref}, 201
+
+@app.route("/allocations/<orderid>", methods=["GET"])
+def allocations_view_endpoint(orderid: str) -> Tuple[Response, int]:
+    uow = unit_of_work.SqlAlchemyUnitOfWork()
+    results = views.allocations(orderid, uow)
+    if not results:
+        return "not found", 404
+    return jsonify(results), 200

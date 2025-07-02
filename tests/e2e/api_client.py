@@ -24,5 +24,10 @@ def post_to_allocate(orderid: str, sku: str, qty: int, expect_success: bool =Tru
         },
     )
     if expect_success:
-        assert r.status_code == 201
+        assert r.status_code == 202
     return r
+
+
+def get_allocations(orderid: str) -> Response:
+    url = config.get_api_url()
+    return requests.get(f"{url}/allocations/{orderid}")

@@ -19,3 +19,11 @@ class Allocated(Event):
     sku: str
     qty: int
     batchref: str
+
+
+@dataclass
+class Deallocated(Event):
+    """Event indicating that an order has been deallocated from a batch."""
+    orderid: str
+    sku: str
+    qty: int

@@ -45,6 +45,15 @@ allocations = Table(
 )
 
 
+allocations_view = Table(
+    "allocations_view",
+    metadata,
+    Column("orderid", String(255)),
+    Column("sku", String(255)),
+    Column("batchref", String(255)),
+)
+
+
 def start_mappers() -> None:
     """Map the model classes to the database tables."""
     mapper_registry.map_imperatively(model.OrderLine, order_lines)
